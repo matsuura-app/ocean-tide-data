@@ -32,7 +32,14 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add .
-          git commit -m "auto update tide json" || exit 0
-          git pull --rebase origin main  # 👈 この行を追加してズレを自動吸収します
-          git push origin main
+          
+          # 変更がある場合のみコミットしてプッシュする（変更がなければスキップ）
+          if ! git diff --staged --exit-code --quiet; then
+            git commit -m "auto update tide json"
+            git pull --rebase origin main
+            git push origin main
+          else
+            echo "No changes to commit"
+          fi
+
 
