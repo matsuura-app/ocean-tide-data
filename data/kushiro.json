@@ -1,4 +1,5 @@
 {
-  "station": "KR",
-  "name": "kushiro"
+  "station_code": "KR",
+  "station_name": "kushiro",
+  "tide_data": {}
 }

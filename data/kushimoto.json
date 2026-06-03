@@ -1,4 +1,5 @@
 {
-  "station": "KS",
-  "name": "kushimoto"
+  "station_code": "KS",
+  "station_name": "kushimoto",
+  "tide_data": {}
 }

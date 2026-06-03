@@ -1,4 +1,5 @@
 {
-  "station": "QF",
-  "name": "hakata"
+  "station_code": "QF",
+  "station_name": "hakata",
+  "tide_data": {}
 }

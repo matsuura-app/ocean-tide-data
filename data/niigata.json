@@ -1,4 +1,5 @@
 {
-  "station": "S6",
-  "name": "niigata"
+  "station_code": "S6",
+  "station_name": "niigata",
+  "tide_data": {}
 }

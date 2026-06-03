@@ -1,4 +1,5 @@
 {
-  "station": "Q9",
-  "name": "kure"
+  "station_code": "Q9",
+  "station_name": "kure",
+  "tide_data": {}
 }

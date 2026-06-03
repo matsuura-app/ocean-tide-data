@@ -1,4 +1,5 @@
 {
-  "station": "CS",
-  "name": "choshi"
+  "station_code": "CS",
+  "station_name": "choshi",
+  "tide_data": {}
 }

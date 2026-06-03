@@ -1,4 +1,5 @@
 {
-  "station": "B3",
-  "name": "otaru"
+  "station_code": "B3",
+  "station_name": "otaru",
+  "tide_data": {}
 }

@@ -1,4 +1,5 @@
 {
-  "station": "ZO",
-  "name": "okinawa"
+  "station_code": "ZO",
+  "station_name": "okinawa",
+  "tide_data": {}
 }

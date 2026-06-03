@@ -1,4 +1,5 @@
 {
-  "station": "SD",
-  "name": "sendai"
+  "station_code": "SD",
+  "station_name": "sendai",
+  "tide_data": {}
 }

@@ -1,4 +1,5 @@
 {
-  "station": "MG",
-  "name": "miyazaki"
+  "station_code": "MG",
+  "station_name": "miyazaki",
+  "tide_data": {}
 }

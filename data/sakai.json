@@ -1,4 +1,5 @@
 {
-  "station": "SK",
-  "name": "sakai"
+  "station_code": "SK",
+  "station_name": "sakai",
+  "tide_data": {}
 }
