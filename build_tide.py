@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 POINTS = {
     "otaru": "B3",
@@ -14,22 +15,15 @@ POINTS = {
     "sakai": "SK"
 }
 
+Path("data").mkdir(exist_ok=True)
+
 for name, code in POINTS.items():
     data = {
         "station": code,
         "name": name
     }
 
-    with open(
-        f"data/{name}.json",
-        "w",
-        encoding="utf-8"
-    ) as f:
-        json.dump(
-            data,
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
+    with open(f"data/{name}.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 print("done")
