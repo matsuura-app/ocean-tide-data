@@ -34,10 +34,10 @@ for name, code in POINTS.items():
                 lines = response.read().decode('cp932').splitlines()
                 
                 for line in lines:
-                    if len(line) < 80: # 日付や地点コードが含まれる位置まで最低限あるかチェック
+                    if not line.strip() or len(line) < 75:
                         continue
                     
-                    # 1. 先頭の72文字（3文字×24時間）を潮位データとして切り出す
+                    # 1. 潮位データのパース（先頭72文字、3文字×24）
                     tide_part = line[0:72]
                     hourly_tides = []
                     for h in range(24):
@@ -47,23 +47,21 @@ for name, code in POINTS.items():
                         else:
                             hourly_tides.append(0)
                     
-                    # 2. 72文字目以降にあるはずの「日付」と「地点コード」を探す
-                    # 例: "26 1 1Q9" や "260101Q9" などのパターンを正規表現で安全に抽出
-                    # 72文字目から15文字分くらいをターゲットにする
-                    meta_part = line[72:90]
+                    # 2. 地点コード（code）を基準に、その手前にある「年 月 日」を安全に抽出
+                    # 例: "26 1 1Q9" や "260101Q9" から、年月日部分だけを切り出すパターン
+                    # 地点コードの手前にある「スペースを含んだ数字の並び」を狙い撃ちします
+                    pattern = r'([\d\s]{5,10})' + re.escape(code)
+                    match = re.search(pattern, line)
                     
-                    # スペースを含めて「年 月 日 地点コード」の並びを抽出
-                    # 例: "26  1  1Q9" -> ['26', '1', '1', 'Q9']
-                    match = re.findall(r'\d+|[A-Z0-9]{2}', meta_part)
-                    
-                    if len(match) >= 4:
-                        y = match[0].strip().zfill(2)
-                        m = match[1].strip().zfill(2)
-                        d = match[2].strip().zfill(2)
-                        station = match[3].strip()
+                    if match and len(hourly_tides) == 24:
+                        # マッチした年月日文字列（例: "26 1 1" や "26 12 31"）から数字だけを抽出
+                        date_digits = re.findall(r'\d+', match.group(1))
                         
-                        # 自信のある地点コードと一致している場合のみ採用
-                        if station == code and len(hourly_tides) == 24:
+                        if len(date_digits) == 3:
+                            y = date_digits[0].zfill(2)
+                            m = date_digits[1].zfill(2)
+                            d = date_digits[2].zfill(2)
+                            
                             formatted_date = f"20{y}-{m}-{d}"
                             tide_data_by_date[formatted_date] = hourly_tides
                         
