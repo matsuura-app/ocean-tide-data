@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import urllib.request
+import re
 
 # 2026年と2027年の2年分を取得
 YEARS = [2026, 2027]
@@ -33,33 +34,18 @@ for name, code in POINTS.items():
                 lines = response.read().decode('cp932').splitlines()
                 
                 for line in lines:
-                    if not line.strip() or len(line) < 80:
+                    if not line.strip() or len(line) < 75:
                         continue
                     
-                    # 1. 地点コード（例: Q9, CS）の位置を特定する
-                    qpos = line.find(code)
-                    if qpos == -1:
+                    # 1. 【スクショの完全移植】地点コードの直前にある「年 月 日」を正規表現で安全に抽出
+                    m = re.search(rf"(\d{{2}})\s+(\d{{1,2}})\s+(\d{{1,2}}){code}", line)
+                    
+                    if not m:
                         continue
                     
-                    # 2. 地点コードの位置を基準に、潮位データと日付を分解する
-                    # 地点コード（qpos）より前にあるデータが「潮位＋日付」
-                    # そのうち、直前の6〜7文字分（例: "26 1 1"）が日付情報
-                    date_part = line[qpos-6:qpos]
-                    parts = date_part.split()
+                    raw_year, raw_month, raw_day = m.groups()
                     
-                    # 万が一、月の前にスペースがなくてくっついている等のイレギュラー対策で
-                    # 文字数がズレた場合は、もう少し広めに取ってパースする
-                    if len(parts) != 3:
-                        date_part = line[qpos-7:qpos]
-                        parts = date_part.split()
-                        
-                    if len(parts) != 3:
-                        continue
-                        
-                    raw_year, raw_month, raw_day = parts
-                    
-                    # 3. 潮位データのパース（先頭から日付の手前まで、3文字ずつ区切る）
-                    # 確実に24時間分（72文字分）を取り出します
+                    # 2. 潮位データのパース（先頭72文字、3文字×24時間）
                     tide_part = line[0:72]
                     hourly_tides = []
                     for h in range(24):
@@ -69,13 +55,15 @@ for name, code in POINTS.items():
                         else:
                             hourly_tides.append(0)
                     
-                    # 4. 正しい日付フォーマット（YYYY-MM-DD）に整形して格納
-                    # 年が「26」のように2桁の数字であることを確認
-                    if raw_year.isdigit() and raw_month.isdigit() and raw_day.isdigit():
-                        formatted_date = f"20{raw_year.zfill(2)}-{raw_month.zfill(2)}-{raw_day.zfill(2)}"
-                        
-                        if len(hourly_tides) == 24:
-                            tide_data_by_date[formatted_date] = hourly_tides
+                    # 3. YYYY-MM-DD フォーマットに整形（intに変換してから0埋め）
+                    formatted_date = (
+                        f"20{raw_year}-"
+                        f"{int(raw_month):02d}-"
+                        f"{int(raw_day):02d}"
+                    )
+                    
+                    if len(hourly_tides) == 24:
+                        tide_data_by_date[formatted_date] = hourly_tides
                         
         except Exception as e:
             print(f"  Error fetching {year} for {name}: {e}")
