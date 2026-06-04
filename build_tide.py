@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import urllib.request
+import re
 
 # 2026年と2027年の2年分を取得
 YEARS = [2026, 2027]
@@ -33,42 +34,38 @@ for name, code in POINTS.items():
                 lines = response.read().decode('cp932').splitlines()
                 
                 for line in lines:
-                    # 気象庁フォーマット: 最低でも毎時潮位（72文字）＋日付等（7文字以上）が必要
-                    if len(line) < 72:
+                    if len(line) < 80: # 日付や地点コードが含まれる位置まで最低限あるかチェック
                         continue
                     
-                    # 0〜6文字目から日付を安全に抽出（スペースを除去）
-                    # 例: "26 1 1" や "260101" などの表記揺れをすべてカバー
-                    raw_date = line[0:6]
-                    
-                    # 年、月、日を2文字ずつの固定長で安全に切り出す
-                    y = raw_date[0:2].strip().zfill(2)
-                    m = raw_date[2:4].strip().zfill(2)
-                    d = raw_date[4:6].strip().zfill(2)
-                    
-                    if not (y.isdigit() and m.isdigit() and d.isdigit()):
-                        continue
-                        
-                    formatted_date = f"20{y}-{m}-{d}"
-                    
-                    # 毎時潮位は 6文字目から 3文字ずつ 24時間分（計72文字）
+                    # 1. 先頭の72文字（3文字×24時間）を潮位データとして切り出す
+                    tide_part = line[0:72]
                     hourly_tides = []
-                    tide_part = line[6:78]
-                    
                     for h in range(24):
-                        start = h * 3
-                        end = start + 3
-                        val_str = tide_part[start:end].strip()
-                        
-                        # 数字、またはマイナスから始まる数字（負の潮位）を安全にパース
+                        val_str = tide_part[h*3:(h+1)*3].strip()
                         if val_str and (val_str.isdigit() or (val_str.startswith('-') and val_str[1:].isdigit())):
                             hourly_tides.append(int(val_str))
                         else:
-                            # 予期せぬ空欄などの場合は、前後の値から補完するか0にする
                             hourly_tides.append(0)
                     
-                    if len(hourly_tides) == 24:
-                        tide_data_by_date[formatted_date] = hourly_tides
+                    # 2. 72文字目以降にあるはずの「日付」と「地点コード」を探す
+                    # 例: "26 1 1Q9" や "260101Q9" などのパターンを正規表現で安全に抽出
+                    # 72文字目から15文字分くらいをターゲットにする
+                    meta_part = line[72:90]
+                    
+                    # スペースを含めて「年 月 日 地点コード」の並びを抽出
+                    # 例: "26  1  1Q9" -> ['26', '1', '1', 'Q9']
+                    match = re.findall(r'\d+|[A-Z0-9]{2}', meta_part)
+                    
+                    if len(match) >= 4:
+                        y = match[0].strip().zfill(2)
+                        m = match[1].strip().zfill(2)
+                        d = match[2].strip().zfill(2)
+                        station = match[3].strip()
+                        
+                        # 自信のある地点コードと一致している場合のみ採用
+                        if station == code and len(hourly_tides) == 24:
+                            formatted_date = f"20{y}-{m}-{d}"
+                            tide_data_by_date[formatted_date] = hourly_tides
                         
         except Exception as e:
             print(f"  Error fetching {year} for {name}: {e}")
