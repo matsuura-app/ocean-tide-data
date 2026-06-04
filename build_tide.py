@@ -37,15 +37,7 @@ for name, code in POINTS.items():
                     if not line.strip() or len(line) < 75:
                         continue
                     
-                    # 1. 【スクショの完全移植】地点コードの直前にある「年 月 日」を正規表現で安全に抽出
-                    m = re.search(rf"(\d{{2}})\s+(\d{{1,2}})\s+(\d{{1,2}}){code}", line)
-                    
-                    if not m:
-                        continue
-                    
-                    raw_year, raw_month, raw_day = m.groups()
-                    
-                    # 2. 潮位データのパース（先頭72文字、3文字×24時間）
+                    # 1. 24時間分の潮位データを先頭72文字から確実に取得
                     tide_part = line[0:72]
                     hourly_tides = []
                     for h in range(24):
@@ -55,14 +47,20 @@ for name, code in POINTS.items():
                         else:
                             hourly_tides.append(0)
                     
-                    # 3. YYYY-MM-DD フォーマットに整形（intに変換してから0埋め）
-                    formatted_date = (
-                        f"20{raw_year}-"
-                        f"{int(raw_month):02d}-"
-                        f"{int(raw_day):02d}"
-                    )
+                    # 2. 【スクショの完全移植】地点コード直前の「年 月 日」だけを安全に取得
+                    pattern = rf'(\d{{2}})\s+(\d{{1,2}})\s+(\d{{1,2}}){re.escape(code)}'
+                    match = re.search(pattern, line)
                     
-                    if len(hourly_tides) == 24:
+                    if match and len(hourly_tides) == 24:
+                        y, m, d = match.groups()
+                        
+                        # YYYY-MM-DD フォーマットに整形（int型にしてから 02d でゼロ埋め）
+                        formatted_date = (
+                            f"20{y}-"
+                            f"{int(m):02d}-"
+                            f"{int(d):02d}"
+                        )
+                        
                         tide_data_by_date[formatted_date] = hourly_tides
                         
         except Exception as e:
