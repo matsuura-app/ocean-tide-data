@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 import urllib.request
-import re
 
 # 2026年と2027年の2年分を取得
 YEARS = [2026, 2027]
@@ -37,7 +36,7 @@ for name, code in POINTS.items():
                     if not line.strip() or len(line) < 75:
                         continue
                     
-                    # 1. 24時間分の潮位データを先頭72文字から確実に取得
+                    # 1. 先頭72文字から24時間分の潮位を取得
                     tide_part = line[0:72]
                     hourly_tides = []
                     for h in range(24):
@@ -47,20 +46,31 @@ for name, code in POINTS.items():
                         else:
                             hourly_tides.append(0)
                     
-                    # 2. 【スクショの完全移植】地点コード直前の「年 月 日」だけを安全に取得
-                    pattern = rf'(\d{{2}})\s+(\d{{1,2}})\s+(\d{{1,2}}){re.escape(code)}'
-                    match = re.search(pattern, line)
+                    # 2. 【正しい方法】コードの位置を基準に固定で日付を読む
+                    qpos = line.find(code)
+                    if qpos == -1:
+                        continue
                     
-                    if match and len(hourly_tides) == 24:
-                        y, m, d = match.groups()
+                    # 地点コードの直前6文字を切り出して前後の空白を除去
+                    date_part = line[qpos-6:qpos].strip()
+                    parts = date_part.split()
+                    
+                    if len(parts) != 3:
+                        continue
                         
-                        # YYYY-MM-DD フォーマットに整形（int型にしてから 02d でゼロ埋め）
-                        formatted_date = (
-                            f"20{y}-"
-                            f"{int(m):02d}-"
-                            f"{int(d):02d}"
-                        )
+                    raw_year, raw_month, raw_day = parts
+                    
+                    if not (raw_year.isdigit() and raw_month.isdigit() and raw_day.isdigit()):
+                        continue
                         
+                    # YYYY-MM-DD フォーマットに整形（intにしてから0埋め）
+                    formatted_date = (
+                        f"20{int(raw_year):02d}-"
+                        f"{int(raw_month):02d}-"
+                        f"{int(raw_day):02d}"
+                    )
+                    
+                    if len(hourly_tides) == 24:
                         tide_data_by_date[formatted_date] = hourly_tides
                         
         except Exception as e:
