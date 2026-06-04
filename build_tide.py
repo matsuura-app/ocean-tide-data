@@ -33,31 +33,45 @@ for name, code in POINTS.items():
                 lines = response.read().decode('cp932').splitlines()
                 
                 for line in lines:
-                    # 水産フォーマットは最低限の長さ（80文字以上）があるかチェック
-                    if len(line) < 80:
+                    if not line.strip() or len(line) < 80:
                         continue
                     
-                    # 1. 先頭72文字（3文字 × 24時間）から潮位を確実に1時間ずつ取得
+                    # 1. 地点コード（例: Q9, CS）の位置を特定する
+                    qpos = line.find(code)
+                    if qpos == -1:
+                        continue
+                    
+                    # 2. 地点コードの位置を基準に、潮位データと日付を分解する
+                    # 地点コード（qpos）より前にあるデータが「潮位＋日付」
+                    # そのうち、直前の6〜7文字分（例: "26 1 1"）が日付情報
+                    date_part = line[qpos-6:qpos]
+                    parts = date_part.split()
+                    
+                    # 万が一、月の前にスペースがなくてくっついている等のイレギュラー対策で
+                    # 文字数がズレた場合は、もう少し広めに取ってパースする
+                    if len(parts) != 3:
+                        date_part = line[qpos-7:qpos]
+                        parts = date_part.split()
+                        
+                    if len(parts) != 3:
+                        continue
+                        
+                    raw_year, raw_month, raw_day = parts
+                    
+                    # 3. 潮位データのパース（先頭から日付の手前まで、3文字ずつ区切る）
+                    # 確実に24時間分（72文字分）を取り出します
                     tide_part = line[0:72]
                     hourly_tides = []
                     for h in range(24):
                         val_str = tide_part[h*3:(h+1)*3].strip()
-                        # 数字、またはマイナスから始まる数字
                         if val_str and (val_str.isdigit() or (val_str.startswith('-') and val_str[1:].isdigit())):
                             hourly_tides.append(int(val_str))
                         else:
                             hourly_tides.append(0)
                     
-                    # 2. 【ここが固定長】72文字目〜80文字目から「年」「月」「日」「地点」をピンポイント抽出
-                    # 気象庁の仕様: 72-74:年(2桁), 74-76:月(2桁), 76-78:日(2桁), 78-80:地点コード
-                    raw_year  = line[72:74].strip()
-                    raw_month = line[74:76].strip()
-                    raw_day   = line[76:78].strip()
-                    raw_code  = line[78:80].strip()
-                    
-                    # 抽出した地点コードが一致し、年月日がすべて数字のときだけ採用
-                    if raw_code == code and raw_year.isdigit() and raw_month.isdigit() and raw_day.isdigit():
-                        # strip() しているので、1桁の数字（" 1" など）でも正しく "01" に埋められます
+                    # 4. 正しい日付フォーマット（YYYY-MM-DD）に整形して格納
+                    # 年が「26」のように2桁の数字であることを確認
+                    if raw_year.isdigit() and raw_month.isdigit() and raw_day.isdigit():
                         formatted_date = f"20{raw_year.zfill(2)}-{raw_month.zfill(2)}-{raw_day.zfill(2)}"
                         
                         if len(hourly_tides) == 24:
