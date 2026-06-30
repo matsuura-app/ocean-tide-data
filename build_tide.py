@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 import urllib.request
-
-YEARS = [2026, 2027]
+from datetime import datetime
+current_year = datetime.now().year
+YEARS = [current_year, current_year + 1]
 
 POINTS = {
     "otaru": "B3",
