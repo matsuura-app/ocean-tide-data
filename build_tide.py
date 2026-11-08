@@ -2,8 +2,10 @@ import json
 from pathlib import Path
 import urllib.request
 from datetime import datetime
+
 current_year = datetime.now().year
-YEARS = [current_year, current_year + 1]
+# 過去1年、本年、未来1年の合計3年分に変更
+YEARS = [current_year - 1, current_year, current_year + 1]
 
 POINTS = {
     "otaru": "B3",
@@ -65,7 +67,8 @@ for name, code in POINTS.items():
                 tide_data_by_date[formatted_date] = hourly_tides
                 
         except Exception as e:
-            print(name, year, e)
+            # 未来のデータなど、まだファイルが存在しない年がある場合はここでキャッチして続行します
+            print(f"Note for {name} ({year}): {e}")
             
     output_data = {
         "station_code": code,
