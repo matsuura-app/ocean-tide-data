@@ -1,4 +1,4 @@
-Name: Update Tide JSON
+name: Update Tide JSON
 
 permissions:
   contents: write
